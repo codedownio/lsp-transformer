@@ -18,13 +18,8 @@ class Transformer a where
 
   project :: Params a -> [Text] -> ([Text], a)
 
-  -- Inefficient default implementation; instances should define their own
   handleDiff :: Params a -> [Text] -> [Text] -> [TextDocumentContentChangeEvent] -> a -> ([Text], [Text], [TextDocumentContentChangeEvent], a)
-  handleDiff params before after _change _transformer = (before', after', change', transformer')
-    where
-      (before', _ :: a) = project params before
-      (after', transformer' :: a) = project params after
-      change' = [TextDocumentContentChangeEvent Nothing Nothing (T.intercalate "\n" after')]
+  handleDiff = defaultHandleDiff
 
   transformPosition :: Params a -> a -> Position -> Maybe Position
 
@@ -51,3 +46,11 @@ instance (Transformer a, Transformer b) => Transformer (a :> b) where
 
 data SomeTransformer where
   SomeTransformer :: forall a. (Transformer a) => a -> Params a -> SomeTransformer
+
+-- Inefficient default implementation; instances should define their own
+defaultHandleDiff :: forall a. Transformer a => Params a -> [Text] -> [Text] -> [TextDocumentContentChangeEvent] -> a -> ([Text], [Text], [TextDocumentContentChangeEvent], a)
+defaultHandleDiff params before after _change _transformer = (before', after', change', transformer')
+  where
+    (before', _ :: a) = project params before
+    (after', transformer' :: a) = project params after
+    change' = [TextDocumentContentChangeEvent Nothing Nothing (T.intercalate "\n" after')]
