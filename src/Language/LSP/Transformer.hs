@@ -2,19 +2,32 @@
 {-# LANGUAGE TypeOperators #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Language.LSP.Transformer where
 
 import Data.Kind
 import Data.Text
+import qualified Data.Text as T
 import Language.LSP.Types
 
 
 class Transformer a where
   type Params a
+
   project :: Params a -> [Text] -> ([Text], a)
+
+  -- Inefficient default implementation; instances should define their own
   handleDiff :: Params a -> [Text] -> [Text] -> [TextDocumentContentChangeEvent] -> a -> ([Text], [Text], [TextDocumentContentChangeEvent], a)
+  handleDiff params before after _change _transformer = (before', after', change', transformer')
+    where
+      (before', _ :: a) = project params before
+      (after', transformer' :: a) = project params after
+      change' = [TextDocumentContentChangeEvent Nothing Nothing (T.intercalate "\n" after')]
+
   transformPosition :: Params a -> a -> Position -> Maybe Position
+
   untransformPosition :: Params a -> a -> Position -> Position
   -- untransformPosition :: Params a -> a -> Position -> Maybe Position
 
